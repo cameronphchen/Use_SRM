@@ -8,25 +8,25 @@
 
 import numpy as np, scipy, random, sys, math, os
 from scipy import stats
-sys.path.append('/jukebox/ramadge/pohsuan/scikit-learn/sklearn')
 from sklearn.metrics.pairwise import  pairwise_kernels
 
 def align(movie_data, options, args, lrh):
     print 'SRM nonprob kernel {} {}, k={}'.format(args.kernel, args.sigma, args.nfeature),
     sys.stdout.flush()
 
-    nvoxel = movie_data.shape[0]
-    nTR    = movie_data.shape[1]
-    nsubjs = movie_data.shape[2]
+    X = movie_data
+    nsubjs = len(X)
+    for m in range(nsubjs):
+        assert X[0].shape[1] == X[m].shape[1], 'numbers of TRs are different among subjects'
+    nTR = X[0].shape[1]
     align_algo = args.align_algo
     nfeature = args.nfeature
 
     current_file = options['working_path']+align_algo+'_'+lrh+'_current.npz' 
 
-    movie_data_zscore = np.zeros ((nvoxel,nTR,nsubjs))
     K = np.zeros ((nTR,nTR,nsubjs))
-    for m in range(nsubjs):
-        movie_data_zscore[:,:,m] = stats.zscore(movie_data[:,:,m].T, axis=0, ddof=1).T
+    for m in xrange(nsubjs):
+        X[m] = stats.zscore(X[m].T, axis=0, ddof=1).T
 
     kwds = {}
     if args.kernel in ['rbf','sigmoid','poly']:
@@ -36,10 +36,8 @@ def align(movie_data, options, args, lrh):
 
 
     for m in range(nsubjs):
-        # TODO based on different kernel should be using different way to calculate K
         # Identity Kernel
-        #K[:,:,m] = movie_data_zscore[:,:,m].T.dot(movie_data_zscore[:,:,m])
-        K[:,:,m] = pairwise_kernels(movie_data_zscore[:,:,m].T ,movie_data_zscore[:,:,m].T, metric=args.kernel, **kwds)
+        K[:,:,m] = pairwise_kernels(X[m].T ,X[m].T, metric=args.kernel, **kwds)
         
     if not os.path.exists(current_file):
         A = np.zeros((nTR,nfeature,nsubjs))
@@ -47,18 +45,10 @@ def align(movie_data, options, args, lrh):
         
         #initialization
         np.random.seed(args.randseed)
-        Q_qr, R_qr = np.linalg.qr(np.mat(np.random.random((nvoxel,nfeature))))
-        pert = np.zeros((nTR,nTR)) 
-        np.fill_diagonal(pert,1)
         for m in range(nsubjs):
-            U, s, Ut = np.linalg.svd(K[:,:,m]+0.001*pert, full_matrices=False)
-            
-            # AKA = I
-            # A[:,:,m] = U[:,:nfeature].dot(np.diag(s[:nfeature]**(-0.5))) #.dot(Ut[:nfeature,:])
-            
-            # using original nonprobabilistic SRM 
-            A[:,:,m] = np.linalg.pinv(movie_data_zscore[:,:,m]).dot(Q_qr)
-            
+            nvoxel = X[m].shape[0]
+            Q_qr, R_qr = np.linalg.qr(np.random.random((nvoxel,nfeature)))
+            A[:,:,m] = np.linalg.pinv(X[m]).dot(Q_qr)        
             S = S + A[:,:,m].T.dot(K[:,:,m])
         S = S/float(nsubjs)
         niter = 0
@@ -71,22 +61,6 @@ def align(movie_data, options, args, lrh):
         A = workspace['A'] 
         S = workspace['S']
         niter = workspace['niter']
-
-    """
-    def svd(data, template):
-        ## Linear Kernel
-        #Am = data.dot(template.T)
-        ## Quadratic Kernel
-        Am = data.dot(template.T)
-        Am = (Am + 1)**2
-        ## Gaussian Kernel
-        #Am = np.outer(data.dot(data.T).diagonal(),np.ones(template.shape[0])) - \
-        #     2*data.dot(template.T) + np.outer(np.ones(data.shape[0]),template.dot(template.T).diagonal())
-        #Am = scipy.exp(Am/10000)
-        pert = np.zeros((Am.shape))
-        np.fill_diagonal(pert,1)
-        return np.linalg.svd(Am+0.001*pert,full_matrices=False)"""
-
 
     print str(niter+1)+'th',
     for m in range(nsubjs):

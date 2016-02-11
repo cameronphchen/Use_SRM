@@ -15,7 +15,7 @@ from scipy import stats
 import scipy.linalg
 
 def align(movie_data, options, args, lrh):
-    print 'HA_ana_orth vary voxels',
+    print 'Spatial_SRM',
     sys.stdout.flush()
     
     #parameters

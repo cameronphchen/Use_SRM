@@ -12,7 +12,7 @@
 
 # E-step:
 # E_s   : nvoxel x nTR
-# E_sst : nvoexl x nvoxel x nTR
+# E_sst : nvoxel x nvoxel x nTR
 # M-step:
 # W_m   : nvoxel x nvoxel x nsubjs
 # sigma_m2 : nsubjs 
@@ -25,45 +25,60 @@ def align(movie_data, options, args, lrh):
     print 'SRM',
     sys.stdout.flush()
   
-    nvoxel = movie_data.shape[0]
-    nTR    = movie_data.shape[1]
-    nsubjs = movie_data.shape[2]
-  
+    nsubjs = len(movie_data)
+    for m in range(nsubjs):
+        assert movie_data[0].shape[1] == movie_data[m].shape[1], 'numbers of TRs are different among subjects'
+    nTR = movie_data[0].shape[1]
     nfeature = args.nfeature
     align_algo = args.align_algo
   
     current_file = options['working_path']+align_algo+'_'+lrh+'_current.npz'
     # zscore the data
-    bX = np.zeros((nsubjs*nvoxel,nTR))
+    nvoxel = np.zeros((nsubjs,),dtype=int)
+    for m in xrange(nsubjs):
+        nvoxel[m] = movie_data[m].shape[0] 
+    bX = np.zeros((sum(nvoxel),nTR))
+
+    voxel_str = 0
     for m in range(nsubjs):
-        bX[m*nvoxel:(m+1)*nvoxel,:] = stats.zscore(movie_data[:,:,m].T ,axis=0, ddof=1).T
-  
+        bX[voxel_str:(voxel_str+nvoxel[m]),:] = stats.zscore(movie_data[m].T ,axis=0, ddof=1).T
+        voxel_str = voxel_str + nvoxel[m]
+
     del movie_data
-  
+
     # initialization when first time run the algorithm
     if not os.path.exists(current_file):
         bSig_s = np.identity(nfeature)
-        bW     = np.zeros((nsubjs*nvoxel,nfeature))
-        bmu    = np.zeros(nvoxel*nsubjs)
+        bW     = np.zeros((bX_len,nfeature))
         sigma2 = np.zeros(nsubjs)
         ES     = np.zeros((nfeature,nTR))
+        bmu = []
+        for m in xrange(nsubjs):
+            bmu.append(np.zeros((nvoxel[m],)))
   
         #initialization
+        voxel_str = 0
         if args.randseed != None:
             print 'randinit',
             np.random.seed(args.randseed)
-            A = np.mat(np.random.random((nvoxel,nfeature)))
-            Q, R_qr = np.linalg.qr(A)
+            for m in xrange(nsubjs):
+                A = np.random.random((nvoxel[m],nfeature))
+                Q, R_qr = np.linalg.qr(A)
+                bW[voxel_str:(voxel_str+nvoxel[m]),:] = Q 
+                sigma2[m] = 1
+                bmu[m] = np.mean(bX[voxel_str:(voxel_str+nvoxel[m]),:],1)
+                voxel_str = voxel_str + nvoxel[m]
         else:
-            Q = np.identity(nvoxel)
+            for m in xrange(nsubjs):
+                Q = np.identity(nvoxel,nfeature)
+                bW[voxel_str:(voxel_str+nvoxel[m]),:] = Q
+                sigma2[m] = 1
+                bmu[m] = np.mean(bX[voxel_str:(voxel_str+nvoxel[m]),:],1)
+                voxel_str = voxel_str + nvoxel[m]
   
-        for m in range(nsubjs):
-            bW[m*nvoxel:(m+1)*nvoxel,:] = Q 
-            bmu[m*nvoxel:(m+1)*nvoxel] = np.mean(bX[m*nvoxel:(m+1)*nvoxel,:],1)
-            sigma2[m] = 1
         niter = 0
         np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(niter)+'.npz',\
-                            bSig_s = bSig_s, bW = bW, bmu=bmu, sigma2=sigma2, ES=ES, niter=niter)
+                            bSig_s = bSig_s, bW = bW, bmu=bmu, sigma2=sigma2, ES=ES, nvoxel=nvoxel, niter=niter)
   
         # more iterations starts from previous results
     else:
@@ -76,7 +91,9 @@ def align(movie_data, options, args, lrh):
         sigma2 = workspace['sigma2']
         ES     = workspace['ES']
         niter  = workspace['niter']
-  
+
+
+
     # remove mean
     bX = bX - bX.mean(axis=1)[:,np.newaxis]
   
@@ -84,30 +101,34 @@ def align(movie_data, options, args, lrh):
    
     bSig_x = bW.dot(bSig_s).dot(bW.T)
   
+    voxel_str = 0  
     for m in range(nsubjs):
-        bSig_x[m*nvoxel:(m+1)*nvoxel,m*nvoxel:(m+1)*nvoxel] += sigma2[m]*np.identity(nvoxel)
-  
+        bSig_x[voxel_str:(voxel_str+nvoxel[m]),voxel_str:(voxel_str+nvoxel[m])] += sigma2[m]*np.identity(nvoxel[m]])
+        voxel_str = voxel_str + nvoxel[m]
+
     inv_bSig_x = scipy.linalg.inv(bSig_x)
     ES = bSig_s.T.dot(bW.T).dot(inv_bSig_x).dot(bX)
     bSig_s = bSig_s - bSig_s.T.dot(bW.T).dot(inv_bSig_x).dot(bW).dot(bSig_s) + ES.dot(ES.T)/float(nTR)
   
+    voxel_str = 0  
     for m in range(nsubjs):
         print ('.'),
         sys.stdout.flush()
-        Am = bX[m*nvoxel:(m+1)*nvoxel,:].dot(ES.T)
+        Am = bX[voxel_str:(voxel_str+nvoxel[m]),:].dot(ES.T)
         pert = np.zeros((Am.shape))
         np.fill_diagonal(pert,1)
         Um, sm, Vm = np.linalg.svd(Am+0.001*pert,full_matrices=0)
-        bW[m*nvoxel:(m+1)*nvoxel,:] = Um.dot(Vm)
-        sigma2[m] =    np.trace(bX[m*nvoxel:(m+1)*nvoxel,:].T.dot(bX[m*nvoxel:(m+1)*nvoxel,:]))\
-                    -2*np.trace(bX[m*nvoxel:(m+1)*nvoxel,:].T.dot(bW[m*nvoxel:(m+1)*nvoxel,:]).dot(ES))\
+        bW[voxel_str:(voxel_str+nvoxel[m]),:] = Um.dot(Vm)
+        sigma2[m] =    np.trace(bX[voxel_str:(voxel_str+nvoxel[m]),:].T.dot(bX[voxel_str:(voxel_str+nvoxel[m]),:]))\
+                    -2*np.trace(bX[voxel_str:(voxel_str+nvoxel[m]),:].T.dot(bW[voxel_str:(voxel_str+nvoxel[m]),:]).dot(ES))\
                   +nTR*np.trace(bSig_s)
-        sigma2[m] = sigma2[m]/float(nTR*nvoxel)
-  
+        sigma2[m] = sigma2[m]/float(nTR*nvoxel[m])
+        voxel_str = voxel_str + nvoxel[m]
+
     new_niter = niter + 1
     np.savez_compressed(current_file, niter = new_niter)  
     np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter)+'.npz',\
-                        bSig_s = bSig_s, bW = bW, bmu=bmu, sigma2=sigma2, ES=ES, niter=new_niter)
+                        bSig_s = bSig_s, bW = bW, bmu=bmu, sigma2=sigma2, ES=ES, nvoxel=nvoxel, niter=new_niter)
     os.remove(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter-1)+'.npz')
 
     # calculate log likelihood
