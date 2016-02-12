@@ -35,9 +35,9 @@ pprint.pprint(args.__dict__,width=1)
 
 # Find the mask file
 template_path = '/jukebox/ramadge/hejiaz/template/'
-output_path = '/jukebox/ramadge/hejiaz/data/raw/dmtx/'+args.roi+'/'
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
+out_path = '/jukebox/ramadge/hejiaz/data/raw/dmtx/'
+if not os.path.exists(out_path+args.roi+'/'):
+    os.makedirs(out_path+args.roi+'/')
 
 
 C = []
@@ -82,7 +82,7 @@ for m in range(args.nsubj):
     
 
 # Save results
-np.savez_compressed(output_path+'C_mtx.npz', C=C)
+np.savez_compressed(out_path+args.roi+'/C_mtx.npz', C=C)
 
 print 'Done'
 
