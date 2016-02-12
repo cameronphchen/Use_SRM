@@ -1,5 +1,8 @@
 # SRM_only
 
+Written by Hejia Zhang, Cameron Chen (Ramadge Lab @ Princeton), and Javier Turek (Intel Labs)
+For any questions, please email hejiaz@princeton.edu or poshuan@princeton.edu 
+
 ##Code for running Shared Response Model (SRM): 
 It always takes in brain maps X and generates W and S such that X is approximately equal to W*S.
 
@@ -15,6 +18,10 @@ Kernel version of SRM. It can be faster than SRM especially when the number of v
 4. Spatial SRM:  
 Non-probabilistic SRM with anatomical information. It can be used to generate more spatially smooth functional topographies (columns of W). Before running this algorithm, please run compute_regularization_mat.py first to generate the required regularization matrices. 
 
+## Which SRM should I use?
+1. If you have large number of voxels but small number of features, go for Kernel SRM.
+2. If you are pushing for predictive performance, go for SRM.
+3. If you want to get more interpretable brain maps, go for Spatial SRM. 
 
 ##What do I need to modify:
 
