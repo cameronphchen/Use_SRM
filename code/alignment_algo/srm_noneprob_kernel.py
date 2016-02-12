@@ -10,8 +10,8 @@ import numpy as np, scipy, random, sys, math, os
 from scipy import stats
 from sklearn.metrics.pairwise import  pairwise_kernels
 
-def align(movie_data, options, args, lrh):
-    print 'SRM nonprob kernel {} {}, k={}'.format(args.kernel, args.sigma, args.nfeature),
+def align(movie_data, options, args):
+    print 'SRM nonprob kernel {}, k={}'.format(args.kernel, args.nfeature),
     sys.stdout.flush()
 
     X = movie_data
@@ -22,7 +22,7 @@ def align(movie_data, options, args, lrh):
     align_algo = args.align_algo
     nfeature = args.nfeature
 
-    current_file = options['working_path']+align_algo+'_'+lrh+'_current.npz' 
+    current_file = options['working_path']+align_algo+'_current.npz' 
 
     K = np.zeros ((nTR,nTR,nsubjs))
     for m in xrange(nsubjs):
@@ -52,12 +52,12 @@ def align(movie_data, options, args, lrh):
             S = S + A[:,:,m].T.dot(K[:,:,m])
         S = S/float(nsubjs)
         niter = 0
-        np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(niter)+'.npz',\
+        np.savez_compressed(options['working_path']+align_algo+'_'+str(niter)+'.npz',\
                           A = A, S = S, niter=niter)
     else:
         workspace = np.load(current_file)
         niter = workspace['niter']
-        workspace = np.load(options['working_path']+align_algo+'_'+lrh+'_'+str(niter)+'.npz')
+        workspace = np.load(options['working_path']+align_algo+'_'+str(niter)+'.npz')
         A = workspace['A'] 
         S = workspace['S']
         niter = workspace['niter']
@@ -78,18 +78,19 @@ def align(movie_data, options, args, lrh):
         S_tmp = S_tmp*(nsubjs-1) + A[:,:,m].T.dot(K[:,:,m]) 
         S = S_tmp/float(nsubjs)    
 
-    def obj_func(bX, A, S):
+    def obj_func(A, S):
         obj_val_tmp = 0
         for m in range(nsubjs):
             obj_val_tmp += np.trace(K[:,:,m] - 2*K[:,:,m].dot(A[:,:,m]).dot(S) + S.T.dot(S))
         print obj_val_tmp
         return obj_val_tmp
 
-    
-    obj_func(movie_data_zscore, A, S)
-
     new_niter = niter + 1
     np.savez_compressed(current_file, niter = new_niter)
-    np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter)+'.npz',\
+    np.savez_compressed(options['working_path']+align_algo+'_'+str(new_niter)+'.npz',\
                         A = A, S = S, niter=new_niter)
+    np.savez_compressed(options['working_path']+align_algo+'_'+str(new_niter)+'_obj.npz',
+                        obj=obj_func(A, S))
+    os.remove(options['working_path']+align_algo+'_'+str(new_niter-1)+'.npz')
+
     return new_niter

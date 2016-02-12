@@ -5,7 +5,7 @@
 # movie_data is a three dimensional matrix of size voxel x TR x nsubjs
 # movie_data[:,:,m] is the data for subject m, which will be X_m^T in the standard 
 # mathematic notation
-# Needs args.mtx, args.roi,args.gamma,and args.mu
+# Needs args.roi and args.mu
 
 # By Hejia Zhang @Princeton University
 
@@ -14,7 +14,7 @@ import numpy as np, scipy, random, sys, math, copy, os
 from scipy import stats
 import scipy.linalg
 
-def align(movie_data, options, args, lrh):
+def align(movie_data, options, args):
     print 'Spatial_SRM',
     sys.stdout.flush()
     
@@ -42,9 +42,8 @@ def align(movie_data, options, args, lrh):
 
     for m in xrange(nsubjs):
         X[m] = stats.zscore(X[m].T, axis=0, ddof=1).T
-
-      
-    current_file = options['working_path']+align_algo+'_'+lrh+'_current.npz'   
+     
+    current_file = options['working_path']+align_algo+'_current.npz'   
 
     if not os.path.exists(current_file):
         #initialization
@@ -72,20 +71,20 @@ def align(movie_data, options, args, lrh):
         S = S/float(nsubjs)
   
         niter = 0
-        np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(niter)+'.npz',\
+        np.savez_compressed(options['working_path']+align_algo+'_'+str(niter)+'.npz',\
                         W = W, S = S, niter=niter)
     else:
         workspace = np.load(current_file)
         niter = workspace['niter']
-        workspace = np.load(options['working_path']+align_algo+'_'+lrh+'_'+str(niter)+'.npz')
+        workspace = np.load(options['working_path']+align_algo+'_'+str(niter)+'.npz')
         W = workspace['W']
         S = workspace['S']
         niter = workspace['niter']
   
     # Extract the regularization matrix
-    dist_file = options['mask_path']+args.roi+'/'+args.mtx+'_mtx.npz'
+    dist_file = options['mask_path']+args.roi+'/C_mtx.npz'
     dist = np.load(dist_file)
-    E = dist[args.mtx]
+    E = dist['C']
     
     print str(niter+1)+'th',
     # Update W
@@ -220,19 +219,7 @@ def align(movie_data, options, args, lrh):
         out['fval'] = F
         out['itr'] = itr
     
-    # calculate objective value
-    F_appr_tmp = 0.0
-    F_cont_tmp = 0.0
-    for m in range(nsubjs):
-        F_appr_tmp += np.linalg.norm(X[m]-W[m].dot(S),ord='fro')**2
-        F_cont_tmp += lamda*np.trace((W[m].T).dot(E[m]).dot(W[m]))
-    print '.'
-    print 'obj_appr_W = '+str(F_appr_tmp),
-    print ' ,obj_cont_W = '+str(F_cont_tmp),
-    print ' ,obj_W = '+str(F_cont_tmp+F_appr_tmp)
-  
-  
-  
+
     # Update S
     S_tmp = np.zeros((nfeature,nTR))
     for m in range(nsubjs):
@@ -240,21 +227,18 @@ def align(movie_data, options, args, lrh):
     S = S_tmp/nsubjs
     
     # calculate objective value
-    F_appr_tmp = 0.0
-    F_cont_tmp = 0.0
+    F_tmp = 0.0
     for m in range(nsubjs):
-        F_appr_tmp += np.linalg.norm(X[m]-W[m].dot(S),ord='fro')**2
-        F_cont_tmp += lamda*np.trace((W[m].T).dot(E[m]).dot(W[m]))
-    print '.'
-    print 'obj_appr_S = '+str(F_appr_tmp),
-    print ' ,obj_cont_S = '+str(F_cont_tmp),
-    print ' ,obj_S = '+str(F_cont_tmp+F_appr_tmp)
+        F_tmp += np.linalg.norm(X[m]-W[m].dot(S),ord='fro')**2+lamda*np.trace((W[m].T).dot(E[m]).dot(W[m]))
+    print 'obj_val = '+str(F_tmp)
     
     new_niter = niter + 1
     np.savez_compressed(current_file, niter = new_niter)
-    np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter)+'.npz',\
+    np.savez_compressed(options['working_path']+align_algo+'_'+str(new_niter)+'.npz',\
                         W = W, S = S, niter=new_niter)
-    os.remove(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter-1)+'.npz')
+    np.savez_compressed(options['working_path']+align_algo+'_'+str(new_niter)+'_obj.npz',
+                        obj=F_tmp)
+    os.remove(options['working_path']+align_algo+'_'+str(new_niter-1)+'.npz')
     
     # print objectives
     sys.stdout.flush()

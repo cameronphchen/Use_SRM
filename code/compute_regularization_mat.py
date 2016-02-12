@@ -41,7 +41,7 @@ if not os.path.exists(output_path):
 
 
 C = []
-for m in range(nsubj):
+for m in range(args.nsubj):
     mask_fname = template_path+'s'+str(m)+'_'+args.roi+'.nii'
 
     # Find the 3d location of each voxel

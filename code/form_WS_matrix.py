@@ -1,26 +1,34 @@
-# forming transformation matrices for non loo experiment
+# forming W and S matrices for different algorithms
 
 import numpy as np
+import scipy.io
+from scipy import stats
 
-
-def transform(args, workspace, nsubjs):
+def transform(args, options, workspace, nsubjs):
     W = []
-    S = np.zeros((args.nfeature, args.nTR))
 
     if args.align_algo in ['spatial_srm', 'srm_noneprob']:
         W = workspace['W']
         S = workspace['S']
+        
     elif args.align_algo in ['srm_noneprob_kernel']:
         A = workspace['A']
-        #TODO: from A to W
         S = workspace['S']
+        if args.format is None:  # If the data is in .npz
+            data = np.load(options['input_path']+args.datapath)
+            data = data['data']
+        # If the input and output data format is MAT
+        elif args.format == 'MAT':
+            data = scipy.io.loadmat(options['input_path']+args.datapath)
+            data = data['data'][0]
+        for m in xrange(nsubjs):
+            data_zscore = stats.zscore(data[m].T, axis=0, ddof=1).T
+            W.append(data_zscore.dot(A[:,:,m]))
+        
     elif args.align_algo in ['srm']:
-        bW = workspace['bW']
+        W = workspace['bW']
         S  = workspace['ES']
-        voxel_str = 0
-        for m in range(nsubjs):
-            W.append(bW[voxel_str:(voxel_str+nvoxel[m]), :])
-            voxel_str = voxel_str + nvoxel[m]
+
     else:
         exit('alignment algo not recognized')
 

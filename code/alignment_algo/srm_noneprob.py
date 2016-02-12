@@ -18,15 +18,9 @@ import os
 from scipy import stats
 
 
-def align(movie_data, options, args, lrh):
-    print 'SRM None-Prob vary voxels' + str(args.nfeature),
+def align(movie_data, options, args):
+    print 'SRM None-Prob' + str(args.nfeature),
     sys.stdout.flush()
-
-    #X = []
-    #for m in xrange(movie_data.shape[2]):
-    #    X.append(movie_data[:, :, m])
-
-    # =======================================================================================
     X = movie_data
     nsubjs = len(X)
 
@@ -38,7 +32,7 @@ def align(movie_data, options, args, lrh):
     align_algo = args.align_algo
     nfeature = args.nfeature
 
-    current_file = options['working_path']+align_algo+'_'+lrh+'_current.npz'
+    current_file = options['working_path']+align_algo+'_current.npz'
 
     for m in xrange(nsubjs):
         X[m] = stats.zscore(X[m].T, axis=0, ddof=1).T
@@ -65,12 +59,12 @@ def align(movie_data, options, args, lrh):
         S = S/float(nsubjs)
 
         niter = 0
-        np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(niter)+'.npz',
+        np.savez_compressed(options['working_path']+align_algo+'_'+str(niter)+'.npz',
                             W=W, S=S, niter=niter)
     else:
         workspace = np.load(current_file)
         niter = workspace['niter']
-        workspace = np.load(options['working_path']+align_algo+'_'+lrh+'_'+str(niter)+'.npz')
+        workspace = np.load(options['working_path']+align_algo+'_'+str(niter)+'.npz')
         W = workspace['W']
         S = workspace['S']
         niter = workspace['niter']
@@ -85,26 +79,26 @@ def align(movie_data, options, args, lrh):
         np.fill_diagonal(pert, 1)
         Um, sm, Vm = np.linalg.svd(Am+0.001*pert, full_matrices=False)
 
-        W[m] = Um.dot(Vm)  # R = UV^T
+        W[m] = Um.dot(Vm)  # W = UV^T
 
     S = np.zeros((nfeature, nTR))
     for m in range(nsubjs):
         S = S + W[m].T.dot(X[m])
     S = S/float(nsubjs)
 
-    def obj_func(bX, bW, S):
+    def obj_func(X, W, S):
         obj_val_tmp = 0
         for m in range(nsubjs):
-            obj_val_tmp += np.linalg.norm(X[m] - W[m].dot(S), 'fro')
+            obj_val_tmp += np.linalg.norm(X[m] - W[m].dot(S), 'fro')**2
         print obj_val_tmp
         return obj_val_tmp
 
     new_niter = niter + 1
     np.savez_compressed(current_file, niter=new_niter)
-    np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter)+'.npz',
+    np.savez_compressed(options['working_path']+align_algo+'_'+str(new_niter)+'.npz',
                         W=W, S=S, niter=new_niter)
-    np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter)+'_obj.npz',
+    np.savez_compressed(options['working_path']+align_algo+'_'+str(new_niter)+'_obj.npz',
                         obj=obj_func(X, W, S))
-    ## clean up results of previous iteration
-    #os.remove(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter-1)+'.npz')
+    # clean up results of previous iteration
+    os.remove(options['working_path']+align_algo+'_'+str(new_niter-1)+'.npz')
     return new_niter
