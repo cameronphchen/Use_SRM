@@ -4,6 +4,24 @@ Written by Hejia Zhang, Cameron Chen (Ramadge Lab @ Princeton), and Javier Turek
 
 For any questions, please email hejiaz@princeton.edu or poshuan@princeton.edu 
 
+If you use this code or SRM in scientific publication, please cite the following paper: 
+
+**A Reduced-Dimension fMRI Shared Response Model**
+
+Po-Hsuan Chen, Janice Chen, Yaara Yeshurun, Uri Hasson, James V. Haxby, Peter J. Ramadge 
+Advances in Neural Information Processing Systems (NIPS), 2015. 
+[Paper](http://papers.nips.cc/paper/5855-a-reduced-dimension-fmri-shared-response-model)
+
+Bibtex:
+```
+@inproceedings{phchen2015srm,
+  title={A Reduced-Dimension f{MRI} Shared Response Model},
+  author={Chen, Po-Hsuan and Chen, Janice and Yeshurun, Yaara and Hasson, Uri and Haxby, James V. and Ramadge, Peter J. },
+  year={2015},
+  booktitle={Advances in Neural Information Processing Systems (NIPS) },
+}
+```
+
 ##Code for running Shared Response Model (SRM): 
 It always takes in brain maps X and generates W and S such that X is approximately equal to W*S.
 
