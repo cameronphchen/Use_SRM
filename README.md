@@ -35,7 +35,7 @@ Non-probabilistic version of SRM. When the number of subjects is big, it has sim
 Kernel version of SRM. It can be faster than SRM especially when the number of voxels is big. The code only supports linear kernel now, so the arguments sigma and degree should not be used at this moment.
 
 4. Spatial SRM:  
-Non-probabilistic SRM with anatomical information. It can be used to generate more spatially smooth functional topographies (columns of W). Before running this algorithm, please run compute_regularization_mat.py first to generate the required regularization matrices. 
+Non-probabilistic SRM with anatomical information. It can be used to generate more spatially smooth functional topographies (columns of W). Before running this algorithm, please run compute_regularization_mat.py first to generate the required regularization matrices. The argument 'mu' is the regularization parameter. A bigger mu means more smooth functional topographies. In our testing with Sherlock dataset, when mu is bigger than 500, the generated functional topographies start to be more smooth than those generated from SRM.Please try different mu values to get optimal performance.
 
 ## Which SRM should I use?
 1. If you have large number of voxels but small number of features, go for Kernel SRM.
