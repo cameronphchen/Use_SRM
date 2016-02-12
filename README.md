@@ -1,6 +1,7 @@
 # SRM_only
 
 Written by Hejia Zhang, Cameron Chen (Ramadge Lab @ Princeton), and Javier Turek (Intel Labs)
+
 For any questions, please email hejiaz@princeton.edu or poshuan@princeton.edu 
 
 ##Code for running Shared Response Model (SRM): 
