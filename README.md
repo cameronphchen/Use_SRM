@@ -1,4 +1,4 @@
-# SRM_only
+# Use_SRM
 
 Written by Cameron Chen, Hejia Zhang (Ramadge Lab @ Princeton)
 
