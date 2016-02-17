@@ -21,7 +21,7 @@
 import numpy as np, scipy, random, sys, math, os
 from scipy import stats
 
-def align(movie_data, options, args, lrh):
+def align(movie_data, options, args):
     print 'SRM',
     sys.stdout.flush()
   
@@ -32,7 +32,7 @@ def align(movie_data, options, args, lrh):
     nfeature = args.nfeature
     align_algo = args.align_algo
   
-    current_file = options['working_path']+align_algo+'_'+lrh+'_current.npz'
+    current_file = options['working_path']+align_algo+'_current.npz'
     # zscore the data
     nvoxel = np.zeros((nsubjs,),dtype=int)
     for m in xrange(nsubjs):
@@ -70,27 +70,28 @@ def align(movie_data, options, args, lrh):
                 voxel_str = voxel_str + nvoxel[m]
         else:
             for m in xrange(nsubjs):
-                Q = np.identity(nvoxel,nfeature)
+                Q = np.eye(nvoxel,nfeature)
                 bW[voxel_str:(voxel_str+nvoxel[m]),:] = Q
                 sigma2[m] = 1
                 bmu[m] = np.mean(bX[voxel_str:(voxel_str+nvoxel[m]),:],1)
                 voxel_str = voxel_str + nvoxel[m]
   
         niter = 0
-        np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(niter)+'.npz',\
+        np.savez_compressed(options['working_path']+align_algo+'_'+str(niter)+'.npz',\
                             bSig_s = bSig_s, bW = bW, bmu=bmu, sigma2=sigma2, ES=ES, nvoxel=nvoxel, niter=niter)
   
         # more iterations starts from previous results
     else:
         workspace = np.load(current_file)
         niter = workspace['niter']
-        workspace = np.load(options['working_path']+align_algo+'_'+lrh+'_'+str(niter)+'.npz')
+        workspace = np.load(options['working_path']+align_algo+'_'+str(niter)+'.npz')
         bSig_s = workspace['bSig_s'] 
         bW     = workspace['bW']
         bmu    = workspace['bmu']
         sigma2 = workspace['sigma2']
         ES     = workspace['ES']
         niter  = workspace['niter']
+        nvoxel  = workspace['nvoxel']
 
     # remove mean
     bX = bX - bX.mean(axis=1)[:,np.newaxis]
@@ -125,9 +126,9 @@ def align(movie_data, options, args, lrh):
 
     new_niter = niter + 1
     np.savez_compressed(current_file, niter = new_niter)  
-    np.savez_compressed(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter)+'.npz',\
+    np.savez_compressed(options['working_path']+align_algo+'_'+str(new_niter)+'.npz',\
                         bSig_s = bSig_s, bW = bW, bmu=bmu, sigma2=sigma2, ES=ES, nvoxel=nvoxel, niter=new_niter)
-    os.remove(options['working_path']+align_algo+'_'+lrh+'_'+str(new_niter-1)+'.npz')
+    os.remove(options['working_path']+align_algo+'_'+str(new_niter-1)+'.npz')
 
     # calculate log likelihood
     sign , logdet = np.linalg.slogdet(bSig_x)
@@ -136,7 +137,7 @@ def align(movie_data, options, args, lrh):
   
     loglike = - 0.5*nTR*logdet - 0.5*np.trace(bX.T.dot(inv_bSig_x).dot(bX)) #-0.5*nTR*nvoxel*nsubjs*math.log(2*math.pi)
   
-    np.savez_compressed(options['working_path']+align_algo+'_'+'loglikelihood_'+lrh+'_'+str(new_niter)+'.npz',\
+    np.savez_compressed(options['working_path']+align_algo+'_'+'loglikelihood_'+str(new_niter)+'.npz',\
                         loglike=loglike)
     
     # print str(-0.5*nTR*logdet)+','+str(-0.5*np.trace(bX.T.dot(inv_bSig_x).dot(bX)))
