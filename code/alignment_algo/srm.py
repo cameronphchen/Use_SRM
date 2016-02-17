@@ -34,6 +34,7 @@ def align(movie_data, options, args):
   
     current_file = options['working_path']+align_algo+'_current.npz'
     # zscore the data
+    print 'zscoring data'
     nvoxel = np.zeros((nsubjs,),dtype=int)
     for m in xrange(nsubjs):
         nvoxel[m] = movie_data[m].shape[0] 
@@ -48,8 +49,9 @@ def align(movie_data, options, args):
 
     # initialization when first time run the algorithm
     if not os.path.exists(current_file):
+        print 'initialization of parameters',
         bSig_s = np.identity(nfeature)
-        bW     = np.zeros((bX_len,nfeature))
+        bW     = np.zeros((sum(nvoxel),nfeature))
         sigma2 = np.zeros(nsubjs)
         ES     = np.zeros((nfeature,nTR))
         bmu = []
@@ -58,10 +60,11 @@ def align(movie_data, options, args):
   
         #initialization
         voxel_str = 0
-        if args.randseed != None:
+        if args.randseed is not None:
             print 'randinit',
             np.random.seed(args.randseed)
             for m in xrange(nsubjs):
+		print m,
                 A = np.random.random((nvoxel[m],nfeature))
                 Q, R_qr = np.linalg.qr(A)
                 bW[voxel_str:(voxel_str+nvoxel[m]),:] = Q 
@@ -70,6 +73,7 @@ def align(movie_data, options, args):
                 voxel_str = voxel_str + nvoxel[m]
         else:
             for m in xrange(nsubjs):
+		print m,
                 Q = np.eye(nvoxel,nfeature)
                 bW[voxel_str:(voxel_str+nvoxel[m]),:] = Q
                 sigma2[m] = 1
@@ -102,7 +106,7 @@ def align(movie_data, options, args):
   
     voxel_str = 0  
     for m in range(nsubjs):
-        bSig_x[voxel_str:(voxel_str+nvoxel[m]),voxel_str:(voxel_str+nvoxel[m])] += sigma2[m]*np.identity(nvoxel[m]])
+        bSig_x[voxel_str:(voxel_str+nvoxel[m]),voxel_str:(voxel_str+nvoxel[m])] += sigma2[m]*np.identity(nvoxel[m])
         voxel_str = voxel_str + nvoxel[m]
 
     inv_bSig_x = scipy.linalg.inv(bSig_x)
