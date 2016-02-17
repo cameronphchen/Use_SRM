@@ -1,8 +1,8 @@
 # SRM_only
 
-Written by Hejia Zhang, Cameron Chen (Ramadge Lab @ Princeton), and Javier Turek (Intel Labs)
+Written by Cameron Chen, Hejia Zhang (Ramadge Lab @ Princeton)
 
-For any questions, please email hejiaz@princeton.edu or poshuan@princeton.edu 
+For any questions, please email poshuan@princeton.edu or hejiaz@princeton.edu
 
 If you use this code or SRM in scientific publication, please cite the following paper: 
 
@@ -31,24 +31,13 @@ Full fledged probabilistic SRM
 2. Non-probabilistic SRM:  
 Non-probabilistic version of SRM. When the number of subjects is big, it has similar performance as SRM. When the number of subjects is small, it can be slightly worse than SRM.
 
-3. Kernel SRM:  
-Kernel version of SRM. It can be faster than SRM especially when the number of voxels is big. The code only supports linear kernel now, so the arguments sigma and degree should not be used at this moment.
-
-4. Spatial SRM:  
-Non-probabilistic SRM with anatomical information. It can be used to generate more spatially smooth functional topographies (columns of W). Before running this algorithm, please run compute_regularization_mat.py first to generate the required regularization matrices. The argument 'mu' is the regularization parameter. A bigger mu means more smooth functional topographies. In our testing with Sherlock dataset, when mu is bigger than 500, the generated functional topographies start to be more smooth than those generated from SRM.Please try different mu values to get optimal performance.
-
 ## Which SRM should I use?
-1. If you have large number of voxels but small number of features, go for Kernel SRM.
-2. If you are pushing for predictive performance, go for SRM.
-3. If you want to get more interpretable brain maps, go for Spatial SRM. 
+1. If you are pushing for predictive performance, go for SRM.
+2. If you are giving a quick try of SRM, use Non-probabilistic SRM.
 
 ##What do I need to modify:
 
-1. template_path and out_path in compute_regularization_mat.py  
-(1) template_path is where you store the roi mask nifti files for each subject. For example, if there are 16 subjects in the dataset, and the roi is PMC, then the argument roi (args.roi) should be 'PMC'. The mask files should be in the directory "template_path", and the files should be named as 's0_PMC.nii' through 's15_PMC.nii'.  
-(2) out_path is where you want to save the generated regularization matrices. 
-
-2. options in run_algo_only.py.  
+1. options in run_algo_only.py.  
 (1) input_path is where you store the brain maps X. The data file name with its full path should be options['input_path']+args.datapath.  
 (2) working_path is where some of the intermediate results are stored.  
 (3) output_path is where the generated W and S are stored.   
