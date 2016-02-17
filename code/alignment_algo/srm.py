@@ -49,7 +49,7 @@ def align(movie_data, options, args):
 
     # initialization when first time run the algorithm
     if not os.path.exists(current_file):
-        print 'initialization of parameters',
+        print 'initialization of parameters'
         bSig_s = np.identity(nfeature)
         bW     = np.zeros((sum(nvoxel),nfeature))
         sigma2 = np.zeros(nsubjs)
@@ -83,9 +83,9 @@ def align(movie_data, options, args):
         niter = 0
         np.savez_compressed(options['working_path']+align_algo+'_'+str(niter)+'.npz',\
                             bSig_s = bSig_s, bW = bW, bmu=bmu, sigma2=sigma2, ES=ES, nvoxel=nvoxel, niter=niter)
-  
-        # more iterations starts from previous results
+        print ''
     else:
+        # more iterations starts from previous results
         workspace = np.load(current_file)
         niter = workspace['niter']
         workspace = np.load(options['working_path']+align_algo+'_'+str(niter)+'.npz')
@@ -98,8 +98,7 @@ def align(movie_data, options, args):
         nvoxel  = workspace['nvoxel']
 
     # remove mean
-    bX = bX - bX.mean(axis=1)[:,np.newaxis]
-  
+    bX = bX - bX.mean(axis=1)[:,np.newaxis] 
     print str(niter+1)+'th',
    
     bSig_x = bW.dot(bSig_s).dot(bW.T)
