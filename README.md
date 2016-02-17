@@ -1,6 +1,6 @@
 # Use_SRM
 
-Written by Cameron Chen, Hejia Zhang (Ramadge Lab @ Princeton)
+Developed by Cameron PH Chen, Hejia Zhang (Ramadge Lab @ Princeton)
 
 For any questions, please email poshuan@princeton.edu or hejiaz@princeton.edu
 
