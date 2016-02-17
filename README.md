@@ -33,15 +33,13 @@ Non-probabilistic version of SRM. When the number of subjects is big, it has sim
 
 ## Which SRM should I use?
 1. If you are pushing for predictive performance, go for SRM.
-2. If you are giving a quick try of SRM, use Non-probabilistic SRM.
+2. If you are giving a quick try of SRM, use Non-probabilistic SRM. The performance is close to SRM with many subjects, and it's also much faster.
 
 ##What do I need to modify:
-
 1. options in run_algo_only.py.  
 (1) input_path is where you store the brain maps X. The data file name with its full path should be options['input_path']+args.datapath.  
 (2) working_path is where some of the intermediate results are stored.  
 (3) output_path is where the generated W and S are stored.   
-(4) mask_path is where the regularization matrices are stored. It should be exactly the same as out_path in compute_regularization_mat.py. If you do not need to run spatial SRM, you can put a random path here and it would not do anything.  
 
 ##Input and Output format
 1. Input brain maps X:  
