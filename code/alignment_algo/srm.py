@@ -74,7 +74,7 @@ def align(movie_data, options, args):
         else:
             for m in xrange(nsubjs):
 		print m,
-                Q = np.eye(nvoxel,nfeature)
+                Q = np.eye(nvoxel[m],nfeature)
                 bW[voxel_str:(voxel_str+nvoxel[m]),:] = Q
                 sigma2[m] = 1
                 bmu[m] = np.mean(bX[voxel_str:(voxel_str+nvoxel[m]),:],1)
